@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-challenge
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: k8s-challenge
+  template:
+    metadata:
+      labels:
+        app: k8s-challenge
+    spec:
+      containers:
+        - name: k8s-challenge
+          image: k8s-challenge:latest
+          ports:
+            - containerPort: 4000
+          imagePullPolicy: Never
+          env:
+            - name: NAME
+              valueFrom: 
+                 configMapKeyRef:
+                   name: k8s-challenge-config
+                   key: NAME
+          resources:
+            limits:
+              cpu: "1"
+              memory: "500Mi"
+            requests:
+              cpu: "0.1"
+              memory: "200Mi"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-challenge-service
+spec:
+  selector:
+    app: k8s-challenge
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 4000
+  type: NodePort
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: k8s-challenge-ingress
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: k8s-challenge-service
+                port:
+                  number: 80
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k8s-challenge-config
+data:
+  NAME: Andres
